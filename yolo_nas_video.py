@@ -5,6 +5,7 @@ from super_gradients.training import models
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 list_models = ["yolo_nas_l", "yolo_nas_m", "yolo_nas_s"]
+device  = "cpu"
 
 list_models = ["yolo_nas_s"]
 
