@@ -81,13 +81,11 @@ class LaneLines():
         return final_image
 
 
-# image = cv2.imread('./photo_lines/4.png')
-# #lane_image = np.copy(image)
+# image = cv2.imread('./test_images/1.png')
+# lane_image = np.copy(image)
 
-# final_image = frame_processor(image)
-
-# # lane_lines = LaneLines(lane_image)
-# # final_image = lane_lines.find_lane_lines()
+# lane_lines = LaneLines(lane_image)
+# final_image = lane_lines.find_lane_lines()
 
 # cv2.imshow("Result", final_image)
 # cv2.waitKey(0)
@@ -134,8 +132,8 @@ def process(image):
     image_with_lines = drow_the_lines(image, lines)
     return image_with_lines
   
-image = cv2.imread('./test_images/2.jpg')
+# image = cv2.imread('./test_images/2.jpg')
 
-image = process(image)
-cv2.imshow('result', image)
-cv2.waitKey(0)
+# image = process(image)
+# cv2.imshow('result', image)
+# cv2.waitKey(0)

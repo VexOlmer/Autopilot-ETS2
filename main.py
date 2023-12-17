@@ -5,7 +5,7 @@ from time import time
 from windowcapture import WindowCapture
 from ultralytics import YOLO
 import torch
-from lane_lines import LaneLines
+from lane_lines import LaneLines, process
 
 # Change the working directory to the folder this script is in.
 # Doing this because I'll be putting the files from each video in their own folder on GitHub
@@ -27,7 +27,8 @@ while(True):
     
     lane_lines = LaneLines(screenshot)
 
-    cv.imshow('Computer Vision', lane_lines.find_lane_lines())
+    #cv.imshow('Computer Vision', lane_lines.find_lane_lines())
+    cv.imshow('Computer Vision', process(screenshot))
 
     # debug the loop rate
     print('FPS {}'.format(1 / (time() - loop_time)))
