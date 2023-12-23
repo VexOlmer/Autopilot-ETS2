@@ -5,7 +5,7 @@ from time import time
 from windowcapture import WindowCapture
 from ultralytics import YOLO
 import torch
-from lane_lines import LaneLines, process
+from scripts.lane_lines import LaneLines, process
 
 model = YOLO("yolov8m.pt")
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
