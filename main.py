@@ -7,33 +7,36 @@ from ultralytics import YOLO
 import torch
 from lane_lines import LaneLines, process
 
-# Change the working directory to the folder this script is in.
-# Doing this because I'll be putting the files from each video in their own folder on GitHub
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
 model = YOLO("yolov8m.pt")
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model.to(device)
 classes = [0, 2, 7, 9]
 
-wincap = WindowCapture('Zup!')
+#wincap = WindowCapture('Euro Truck Simulator 2') # not work
+#wincap = WindowCapture('INSIDE') # work
+#wincap = WindowCapture('Zup!') # work
+wincap = WindowCapture('HALF-LIFE 2 - Direct3D 9') # work
+#wincap = WindowCapture('Steam') # error!!!
 
 loop_time = time()
 while(True):
 
-    # get an updated image of the game
     screenshot = wincap.get_screenshot()
-    #result = model.predict(screenshot, classes=classes, conf=0.4, save=True)
     
-    lane_lines = LaneLines(screenshot)
+    #result = model.predict(screenshot, classes=classes, conf=0.4, save=True)
+    #lane_lines = LaneLines(screenshot)
 
     #cv.imshow('Computer Vision', lane_lines.find_lane_lines())
-    cv.imshow('Computer Vision', process(screenshot))
+    #cv.imshow('Computer Vision', process(screenshot))
+    cv.imshow('Computer Vision', screenshot)
 
-    # debug the loop rate
     print('FPS {}'.format(1 / (time() - loop_time)))
     loop_time = time()
 
     if cv.waitKey(1) == ord('q'):
         cv.destroyAllWindows()
         break
+
+
+# Игра не будет работать, если ее просто свернуть
+#      или она будет в полноэкранному режиме 
