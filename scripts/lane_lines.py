@@ -98,7 +98,7 @@ def region_of_interest(img, vertices):
     masked_image = cv2.bitwise_and(img, mask)
     return masked_image
 
-def drow_the_lines(img, lines):
+def draw_the_lines(img, lines):
     img = np.copy(img)
     blank_image = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
 
@@ -121,16 +121,19 @@ def process(image):
     gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     canny_image = cv2.Canny(gray_image, 100, 120)
     cropped_image = region_of_interest(canny_image,
-                    np.array([region_of_interest_vertices], np.int32),)
+                    np.array([region_of_interest_vertices], np.int32))
     lines = cv2.HoughLinesP(cropped_image,
                             rho=2,
                             theta=np.pi/180,
-                            threshold=50,
+                            threshold=200,
                             lines=np.array([]),
                             minLineLength=40,
                             maxLineGap=100)
-    image_with_lines = drow_the_lines(image, lines)
-    return image_with_lines
+    if type(lines) != type(None):
+        image_with_lines = draw_the_lines(image, lines)
+        return image_with_lines
+    else:
+        return image
   
 # image = cv2.imread('./test_images/2.jpg')
 

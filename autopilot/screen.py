@@ -417,6 +417,7 @@ def stream_local_game_screen(box=None, default_fps=10):
             time_per_frame = 1.0 / target_fps
 
         execution_time = time.time() - start
+        #print('FPS screen {}'.format(1 / execution_time))
         
         if execution_time > time_per_frame:
             # Too high fps. No need to sleep.
