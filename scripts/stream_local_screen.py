@@ -22,7 +22,7 @@ box = Box(0, 40, 1024, 768)
 model = YOLO("yolov8m.pt")
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model.to(device)
-classes = [0, 2, 7, 9]
+classes = [2, 7, 9]  # 2 - car, 7 - truck, 9 - traffic light
 
 streamer = stream_local_game_screen(box=box, default_fps=30)
 
@@ -35,11 +35,47 @@ while True:
     img_front = to_numpy(img)
     
     img_front = cv.cvtColor(img_front, cv.COLOR_RGB2BGR)
+    img_traffic = img_front
 
-    #model.predict(process(img_front), classes=classes, conf=0.5, save=False, show=True)
-    model.predict(img_front, classes=classes, conf=0.5, save=False, show=True)
+    result = model.predict(img_front, classes=classes, conf=0.5, save=False, show=False)
+    result = result[0]
+    output = []
+
+    for box in result.boxes:
+        colors_dict = {'Green':0, 'Yellow':0, 'Red':0} # Unknow color ?
+        traffic_color = ""
+        color = (0, 255, 255) # yellow in BGR
+
+        x1, y1, x2, y2 = [
+          round(x) for x in box.xyxy[0].tolist()
+        ] 
+        class_id = box.cls[0].item()
+        class_names = result.names[class_id]
+        prob = round(box.conf[0].item(), 2)
+
+        output.append([
+          x1, y1, x2, y2, class_names, prob
+        ])      
+
+        if class_names == 'traffic light':
+            pic = img_front[y1:y2, x1:x2]
+            
+            hsv = cv.cvtColor(pic, cv.COLOR_BGR2HSV)
+            
+            colors_dict['green'] = cv.inRange(hsv, (60,0,235), (80,255,255)).sum()
+            colors_dict['yellow'] = cv.inRange(hsv, (91,0,233), (95,255,255)).sum()
+            colors_dict['red'] = cv.inRange(hsv, (106,0,245), (120,255,255)).sum()
+            
+            traffic_color = max(colors_dict, key=colors_dict.get)
+            color = (0, 0, 255)  # red in BGR
     
-    #cv.imshow('Computer Vision', img_front)
+        cv.rectangle(img_traffic, (x1, y1), (x2, y2), color, 2)
+        text = traffic_color + " " + class_names + " " + str(prob)
+        cv.putText(img_traffic, text, (x1, y1 - 5), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+    print(output)
+
+    cv.imshow("Image", img_traffic)
     
     print('FPS {}'.format(1 / (time.time() - loop_time)))
     loop_time = time.time()
@@ -47,8 +83,3 @@ while True:
     if cv.waitKey(1) == ord('q'):
         cv.destroyAllWindows()
         break
-    
-    
-    # arr = image.img_to_array(img)
-    # arr = normalize(arr)
-    # arr = np.reshape(arr, (1,) + arr.shape)

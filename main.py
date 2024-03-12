@@ -12,10 +12,10 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model.to(device)
 classes = [0, 2, 7, 9]
 
-#wincap = WindowCapture('Euro Truck Simulator 2') # not work
+wincap = WindowCapture('Euro Truck Simulator 2') # not work
 #wincap = WindowCapture('INSIDE') # work
 #wincap = WindowCapture('Zup!') # work
-wincap = WindowCapture('HALF-LIFE 2 - Direct3D 9') # work
+#wincap = WindowCapture('HALF-LIFE 2 - Direct3D 9') # work
 #wincap = WindowCapture('Steam') # error!!!
 
 loop_time = time()
