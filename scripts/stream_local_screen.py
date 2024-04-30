@@ -28,6 +28,7 @@ streamer = stream_local_game_screen(box=box, default_fps=30)
 
 loop_time = time.time()
 while True:
+    print(device)
     
     image_data = next(streamer)
     img = Image.fromarray(image_data)
