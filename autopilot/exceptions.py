@@ -5,13 +5,13 @@ Defines custom exceptions
 """
 
 
-class EuropilotException(Exception):
+class AutopilotException(Exception):
     pass
 
 
-class ScreenException(EuropilotException):
+class ScreenException(AutopilotException):
     pass
 
 
-class TrainException(EuropilotException):
+class TrainException(AutopilotException):
     pass

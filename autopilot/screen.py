@@ -13,13 +13,22 @@ from itertools import count
 from subprocess import Popen, PIPE
 import numpy as np
 from mss import mss
+import cv2
+import sys
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(dir_path, '..'))
 
 from autopilot.exceptions import ScreenException
 
 
 class Box(object):
     
-    # Global counter which is used to name box
+    """
+        Universal rectangular area on the screen
+    """
+    
+    # Global counter which is used to name each box uniquely
     _counter = count()
 
     def __init__(self, x1, y1, x2, y2, monitor=None):
@@ -35,8 +44,7 @@ class Box(object):
                 |                        |
             (x1, y2)-----------------(x2, y2)
 
-            :param monitor: `Monitor` object which adds proper offset
-                        according to target minitor.
+           :param monitor: to support multiple monitors
         """
         
         self._name = 'Box %s' % str(next(self._counter))
@@ -45,11 +53,6 @@ class Box(object):
         self._x2 = x2
         self._y2 = y2
         self._monitor = monitor
-
-        # This is needed to support multiple monitors
-        if self._monitor is not None:
-            # TODO
-            pass
 
     @staticmethod
     def from_monitor(monitor):
@@ -81,7 +84,6 @@ class Box(object):
 
     @property
     def channel(self):
-        # Channel for RGB
         return 3
 
     @property
@@ -138,27 +140,18 @@ class Monitor(object):
 
 class ScreenUtils(object):
     
+    """
+        Contains static methods for working with the screen
+    """
+    
     @staticmethod
     def select_screen_area():
         
         """
             Use opencv to select game window from entire screen and return
             'Box' object corresponding to game window.
-            This method uses 'selectROI' method in opencv tracking api.
-            See http://docs.opencv.org/master/d7/dfc/group__highgui.html
-            OpenCV 3.0 (or above) is required.
         """
-        
-        try:
-            import cv2
-            cv2.selectROI
-        except ImportError:
-            raise ScreenException('OpenCV is not found')
-        except AttributeError:
-            raise ScreenException('selectROI not found.' +
-                ' Try reinstalling opencv with --with-contrib option')
 
-        # 1. Capture entire screen in primary monitor.
         monitors = ScreenUtils.get_local_monitors()
         # Use primary monitor to create box
         box = Box.from_monitor(monitors[0])
@@ -166,12 +159,9 @@ class ScreenUtils(object):
         entire_screen = local_grab.grab()
         entire_screen = entire_screen.reshape(box.numpy_shape)
 
-        # 2. Select game window from entire screen.
         window_name = 'select_screen_area'
         region = cv2.selectROI(window_name, entire_screen)
 
-        # `region` is tuple for (x1, y1, x2 - x1, y2 - y1) according to `Box`
-        # coordinate system.
         return Box(
             region[0], region[1],
             region[0] + region[2], region[1] + region[3]
@@ -180,17 +170,15 @@ class ScreenUtils(object):
     @staticmethod
     def get_local_monitors():
         
-        """"
-            We currently use mss().monitors to get monitor information.
+        """
+            Use mss().monitors to get monitor information.
             mss().monitors[0] is a dict of all monitors together
             mss().monitors[N] is a dict of the monitor N (with N > 0)
-            But we drop the first elem because it's sometimes wrong because of
-            the bug in mss module.
-            TODO: Need to cache this property somewhere.
         """
 
         mss_monitors = mss().monitors[1:]
         monitors = []
+        
         for idx, elem in enumerate(mss_monitors):
             monitors.append(Monitor(
                 elem['width'],
@@ -222,7 +210,7 @@ class _LocalImpl(object):
         
         """
             Reads screen and returns raw RGB `bytearray`.
-            :param bounding_box: Read only given area of the screen.
+            :param bounding_box: Contain the coordinates of the desired area on the screen
         """
         
         raise NotImplementedError()
@@ -244,13 +232,6 @@ class MssImpl(_LocalImpl):
         self._executor = mss()
 
         if self._is_osx:
-            
-            """
-                XXX: `mss` passes wrong param when it calls
-                `coregraphics.CGWindowListCreateImage' resulting in doubled
-                image size in retina display.
-                We fix this by hooking that function directly.
-            """
 
             orig_func = self._executor.core.CGWindowListCreateImage
 
@@ -264,12 +245,6 @@ class MssImpl(_LocalImpl):
 
     def _read(self, bounding_box):
         
-        """
-            FIXME: Currently taking a screenshot is not fast enough in
-            retina-like display which has a very high pixel density.
-        """
-        
-        # Coordinates need to be converted accordingly.
         x1, y1, x2, y2 = bounding_box.to_tuple()
         width = x2 - x1
         height = y2 - y1
@@ -282,23 +257,17 @@ class MssImpl(_LocalImpl):
         }
 
         adjust_needed = self._is_osx and width % 16 != 0
+        
         if adjust_needed:
             
             """
-                XXX: When the width is not divisible by 16, extra padding is
-                added by macOS in the form of black pixels, which results
-                in a screenshot with shifted pixels.
-                To prevent this, `mss` reduces width to the closest smaller
-                multiple of 16.
-                But we don't want the width size to be reduced unexpectedly.
-                This is a little hack to get the exact size of image.
+                Fixing a bug related to not dividing the width by 16. 
+                First, increase the dimensions, and then cut off the unnecessary.
             """
 
             adjusted_width = width + (16 - (width % 16))
             monitor_dict['width'] = adjusted_width
 
-            # Now `adjusted_rgb_data` has a bigger width.
-            # Let's cut the remaining width to get our desired width.
             adjusted_rgb_data = self._executor.grab(monitor_dict).rgb
             rgb_data = bytearray()
             num_channels = 3
@@ -313,17 +282,13 @@ class MssImpl(_LocalImpl):
             return self._executor.grab(monitor_dict).rgb
 
 
-class PilImpl(_LocalImpl):
-    pass
-
-
 class ScreenGrab(object):
-    def __init__(self, box):
-        
-        """
-            box: This class will capture screen inside this `Box`.
-        """
-        
+    
+    """
+        This class will capture screen inside this `Box`.
+    """
+    
+    def __init__(self, box):        
         self._box = box
 
     @property
@@ -369,24 +334,13 @@ def stream_local_game_screen(box=None, default_fps=10):
     
     """
         Convenient wrapper for local screen capture.
-        This method wraps everything which is needed to get game screen data in
-        primary monitor.
-        It generates RGB numpy array with the shape of (height, width, 3)
-        rather than raw 1 dimensional array because selected image size is not
-        exposed to outside this method.
 
         :param box: If it's None, we first select game window area from screen
         and start streaming inside that box.
-        :param default_fps: Target fps for screen capture. NOTE that this value
-        can be adjusted from other coroutine.
+        :param default_fps: Target fps for screen capture.
     """
     
     if box is None:
-        # Open a new process and get output from stdout
-        # Due to bug in cv2.selectROI, area selection window sometime hangs
-        # until main process exits preventing us from capturing right screen
-        # data. We have to start subprocess to make sure the window to be
-        # closed before we start capturing the screen.
         dir_path = os.path.dirname(os.path.realpath(__file__))
         subproc = Popen([
             'python', os.path.join(
@@ -397,13 +351,11 @@ def stream_local_game_screen(box=None, default_fps=10):
         try:
             box_tuple = ast.literal_eval(output.split('\n')[-2])
         except ValueError:
-            # Something went wrong.
             traceback.print_exc()
             raise ScreenException('Failed to get screen area')
 
         box = Box.from_tuple(box_tuple)
 
-    # We may need to use some epsilon value to meet fps more tightly.
     time_per_frame = 1.0 / default_fps
     local_grab = LocalScreenGrab(box)
     
@@ -413,7 +365,6 @@ def stream_local_game_screen(box=None, default_fps=10):
         screen = local_grab.grab()
         target_fps = yield screen.reshape(box.numpy_shape)
         if target_fps is not None:
-            # Change fps accordingly
             time_per_frame = 1.0 / target_fps
 
         execution_time = time.time() - start

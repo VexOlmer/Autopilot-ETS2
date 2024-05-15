@@ -4,7 +4,6 @@ import numpy
 # from PIL Image to Numpy/OpevCV format image
 def to_numpy(im):
     im.load()
-    # unpack data
     e = Image._getencoder(im.mode, 'raw', im.mode)
     e.setimage(im.im)
 
