@@ -11,5 +11,8 @@ class MyConfig(Config):
     
     BOX = Box(0, 0, 500, 500)
     DEFAULT_FPS = 5
+    
+    DATA_PATH = os.path.join('C:\Projects\data_autopilot', 'csv')
+    IMG_PATH = os.path.join('C:\Projects\data_autopilot', 'img', 'raw')
 
 generate_training_data(config=MyConfig)

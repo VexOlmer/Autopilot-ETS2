@@ -5,7 +5,8 @@
 """
 
 # NOTE добавить включение/выключение записи данных на кнопку
-# NOTE исправить баг с уменьшением fps на разницу руля (чет не робит)
+# NOTE добавить получение угла поворота по маршруту из мелкого навигатора
+# NOTE добавить при большом угле поворота зеркалние изображение, а также шумы Гаусса
 
 import os
 import re
@@ -116,12 +117,21 @@ def dict_from_sensor_data(sensor_data):
         "Brake": sensor_data.brake
     }
 
+def print_sensor_data(sensor_data):
+    print(f'Steer (поворот руля) {sensor_data.steer}')
+    print(f'Throttle (ускорение) {sensor_data.throttle}')
+    print(f'Brake (тормоз) {sensor_data.brake}')
+    # print(f'Clutch {sensor_data.clutch}')
+    # print(f'WheelPositionZ  {sensor_data.wheelPositionZ }')
+    print("------------------------------------------------\n")
+
 
 def generate_training_data(config=Config):
 
     """
         Generate training data.
         :param config: Training configuration class
+        
     """
 
     global _global_config
@@ -166,26 +176,30 @@ def generate_training_data(config=Config):
             # Start generator
             image_data = next(streamer)
         else:
-            image_data = streamer.send(
-                fps_adjuster.get_next_fps(last_sensor_data))
+            # image_data = streamer.send(
+            #     fps_adjuster.get_next_fps(last_sensor_data))
+            print(fps_adjuster.get_next_fps(last_sensor_data))
 
         telemetry_reader.update_telemetry(truck_info)
         sensor_data = truck_info
         last_sensor_data = sensor_data
+        
+        # print_sensor_data(sensor_data)
+        # print('last_sensor_data', last_sensor_data, last_sensor_data is None, last_sensor_data.steer)
 
-        sensor_data_dict = dict_from_sensor_data(truck_info)
+        # sensor_data_dict = dict_from_sensor_data(truck_info)
 
-        img_filename = save_image_file(_global_config.FILE_CSV_NAME, image_data)
-        write_in_csv([img_filename, sensor_data_dict])
+        # img_filename = save_image_file(_global_config.FILE_CSV_NAME, image_data)
+        # write_in_csv([img_filename, sensor_data_dict])
 
 
 class FpsAdjuster(object):
 
     """
     
-    Adjust frames per second (FPS) depending on the rotation of the car's steering wheel.
-    When driving with a slight turn of the steering wheel for more than 2 seconds, 
-        the FPS drops by 2 times.
+        Adjust frames per second (FPS) depending on the rotation of the car's steering wheel.
+        When driving with a slight turn of the steering wheel for more than 2 seconds, 
+            the FPS drops by 2 times.
 
     """
 
@@ -206,7 +220,7 @@ class FpsAdjuster(object):
         self._default_fps = _global_config.DEFAULT_FPS
         self._adjust_factor = 2
         self._duration_threshold = 2
-        self._max_straight_wheel_axis = 0.005
+        self._max_straight_wheel_axis = 200
         self._last_straight_time = None
 
     def get_next_fps(self, sensor_data):
@@ -216,23 +230,30 @@ class FpsAdjuster(object):
             :param sensor_data: ets2_telemetry object.
 
         """
+        
+        #print(sensor_data, sensor_data.steer)
 
         going_straight = self._going_straight(sensor_data.steer)
+        #print('going_straight ', going_straight)
+        
         if self._last_straight_time is None:
             self._update_last_straight_time(going_straight)
             return self._default_fps
 
         straight_duration = time.time() - self._last_straight_time
+        
+        #print('straight_duration > self._duration_threshold:', straight_duration > self._duration_threshold)
+        
         if going_straight and \
                 straight_duration > self._duration_threshold:
             # Adjust fps
-            return max(self._default_fps / self._adjust_factor, 1)
+            return max(self._default_fps // self._adjust_factor, 1)
         else:
             self._update_last_straight_time(going_straight)
             return self._default_fps
 
     def _going_straight(self, wheel_axis):
-        return abs(int(wheel_axis)) < self._max_straight_wheel_axis
+        return abs(wheel_axis) < self._max_straight_wheel_axis
 
     def _update_last_straight_time(self, going_straight):
         if self._last_straight_time is None and going_straight:
