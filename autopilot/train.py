@@ -1,6 +1,6 @@
 """
 
-Utils for generating training data
+    Utils for generating training data
 
 """
 
@@ -44,6 +44,7 @@ class Config(object):
         :attr WAIT_KEYPRESS: Button to stop or start saving data
         :attr DEBUG: If this is True, write debug msg print.
     """
+    
     __metaclass__ = _ConfigType
     BOX = None
     DATA_PATH = os.path.join('D:\Projects\data_autopilot', 'csv')
