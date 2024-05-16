@@ -3,7 +3,10 @@ from multiprocessing.shared_memory import SharedMemory
 
 
 class AbstractDataClass(ABC):
-    """Outlines the data structure used to store the telemetry information"""
+    
+    """
+        Outlines the data structure used to store the telemetry information
+    """
 
     @abstractmethod
     def update(self, memory_map):
@@ -11,7 +14,10 @@ class AbstractDataClass(ABC):
 
 
 class TelemetryReader:
-    """This class allows you to hook into ETS2's telemetry stream and start reading from it"""
+    
+    """
+        This class allows you to hook into ETS2's telemetry stream and start reading from it
+    """
 
     # memory_location defined by
     # https://github.com/RenCloud/scs-sdk-plugin/blob/master/scs-telemetry/inc/scs-telemetry-common.hpp#L26
@@ -19,11 +25,18 @@ class TelemetryReader:
     memory_map = None
 
     def __init__(self):
-        """Initialise the telemetry reader, attempting the first hook"""
+        
+        """
+            Initialise the telemetry reader, attempting the first hook
+        """
+
         self.hook_into_telemetry()
 
     def hook_into_telemetry(self):
-        """Try to hook into the memory and start streaming information from it"""
+
+        """
+            Try to hook into the memory and start streaming information from it
+        """
 
         if self.memory_map is not None:
             # Have already hooked into the memory map. We do not do it again
@@ -37,7 +50,11 @@ class TelemetryReader:
             )
 
     def update_telemetry(self, data_class: AbstractDataClass):
-        """Read the telemetry data"""
+
+        """
+            Read the telemetry data
+        """
+
         if self.memory_map is None:
             print("Telemetry stream is not open. Can not update!")
 

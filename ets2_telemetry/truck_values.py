@@ -3,7 +3,10 @@ from . import AbstractDataClass
 
 
 class TruckValues(AbstractDataClass):
-    """Information about the truck. Note: Incomplete"""
+    
+    """
+        Information about the truck. Note: Incomplete
+    """
 
     steer = 0.0
     throttle = 0.0
