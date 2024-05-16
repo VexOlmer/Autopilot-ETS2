@@ -14,7 +14,7 @@ import numpy
 import datetime
 import hashlib
 import re
-import keyboard
+from pynput.keyboard import Key, Controller
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_path, '..'))
