@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 
+# NOTE картинку нужно центрировать и обрезать нижнюю часть, чтобы она не участвовала в анализе, может в игре центрировать по северу.
+# Также желательно брать не всю следующую часть, а только не большую часть метров на 100 вперед
+
 # Загрузка изображения
 img = cv2.imread('C:\Projects\Cursovik\example\minimap\minimap_6.png')
 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
