@@ -17,4 +17,6 @@ class MyConfig(Config):
     # DATA_PATH = os.path.join('C:\Projects\data_autopilot', 'csv')
     # IMG_PATH = os.path.join('C:\Projects\data_autopilot', 'img', 'raw')
 
+# NOTE увеличить число машин, их слишком мало!!!
+
 generate_training_data(config = MyConfig)

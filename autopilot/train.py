@@ -188,8 +188,6 @@ def generate_training_data(config=Config):
         if keyboard.is_pressed('e'):
             _save_img_file = False
 
-        #print(f'Значение переменной - {_save_img_file}')
-
         if(_save_img_file):
             if last_sensor_data is None:
                 # Start generator
@@ -210,27 +208,25 @@ def generate_training_data(config=Config):
 
             sensor_data_dict = dict_from_sensor_data(truck_info)
             sensor_data_dict['angle_path'] = int(angle_path)
-            print_sensor_data_dict(sensor_data_dict)
+            #print_sensor_data_dict(sensor_data_dict)
 
-            # if (abs(sensor_data_dict['steer']) > MAX_ANGLE_NOT_MIRROR):
-            #     image_front_mirror = ImageOps.mirror(image_front)
-            #     sensor_data_dict_mirror = sensor_data_dict.copy()
-            #     sensor_data_dict_mirror['steer'] *= -1
+            if (abs(sensor_data_dict['steer']) > MAX_ANGLE_NOT_MIRROR):
+                image_front_mirror = ImageOps.mirror(image_front)
+                sensor_data_dict_mirror = sensor_data_dict.copy()
+                sensor_data_dict_mirror['steer'] *= -1
 
-            #     mirror_img += 1
-            #     total_img += 1
+                mirror_img += 1
+                total_img += 1
 
-            #     img_filename = save_image_file_RGB(_global_config.FILE_CSV_NAME, image_front_mirror, is_mirror=True)
-            #     write_in_csv([img_filename, sensor_data_dict_mirror])
+                img_filename = save_image_file_RGB(_global_config.FILE_CSV_NAME, image_front_mirror, is_mirror=True)
+                write_in_csv([img_filename, sensor_data_dict_mirror])
 
-            # img_filename = save_image_file_RGB(_global_config.FILE_CSV_NAME, image_front)
-            # write_in_csv([img_filename, sensor_data_dict])
+            img_filename = save_image_file_RGB(_global_config.FILE_CSV_NAME, image_front)
+            write_in_csv([img_filename, sensor_data_dict])
 
-            # total_img += 1
+            total_img += 1
 
-            # print(f'Total images - {total_img}, Mirror images - {mirror_img}')
-        
-        #print(f'Save image - {_save_img_file}')
+            print(f'Total images - {total_img}, Mirror images - {mirror_img}, Save image - {_save_img_file}')
 
 
 class FpsAdjuster(object):
