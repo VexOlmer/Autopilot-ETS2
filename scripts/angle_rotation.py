@@ -1,40 +1,39 @@
 import cv2
 import numpy as np
 
-# NOTE картинку нужно центрировать и обрезать нижнюю часть, чтобы она не участвовала в анализе, может в игре центрировать по северу.
-# Также желательно брать не всю следующую часть, а только не большую часть метров на 100 вперед
 
-# Загрузка изображения
-img = cv2.imread('C:\Projects\Cursovik\example\minimap\minimap_6.png')
-hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+def angle_rotation_from_map(image_numpy):
 
-# Определение диапазона красного цвета в HSV
-lower_red = np.array([0, 100, 100])
-upper_red = np.array([10, 255, 255])
+    """
+    
+        Finding the turning angle of a route on the minimap.
+        :param image_numpy: Cropped image of the route in numpy array format.
+    
+    """
 
-# Создание маски изображения только для красного цвета
-mask = cv2.inRange(hsv, lower_red, upper_red)
+    hsv = cv2.cvtColor(image_numpy, cv2.COLOR_RGB2HSV)
 
-# Нахождение контуров
-contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Defining the red color range in HSV
+    lower_red = np.array([0, 100, 100])
+    upper_red = np.array([10, 255, 255])
 
-# Нахождение самой длинной красной линии
-max_line_length = 0
-max_line_angle = 0
+    # Image mask including only red color
+    mask = cv2.inRange(hsv, lower_red, upper_red)
 
-for contour in contours:
-    (x, y), (w, h), angle = cv2.minAreaRect(contour)
-    if w > max_line_length:
-        max_line_length = w
-        max_line_angle = angle
+    # Determining the contours of the longest red line
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-# Отображение найденной красной линии
-cv2.drawContours(img, contours, -1, (0, 0, 255), 2)
+    max_line_length = 0
+    max_line_angle = 0
 
-# Вывод угла поворота найденной красной линии
-print("Угол красной линии: ", max_line_angle)
+    for contour in contours:
+        (x, y), (w, h), angle = cv2.minAreaRect(contour)
+        if w > max_line_length:
+            max_line_length = w
+            max_line_angle = angle
+    
+    # cv2.drawContours(image, contours, -1, (0, 0, 255), 2)
+    # print("Угол красной линии: ", max_line_angle)
+    #cv2.imshow('Red Line', image)
 
-# Отображение изображения с красной линией
-cv2.imshow('Red Line', img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    return max_line_angle

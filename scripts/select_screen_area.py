@@ -1,6 +1,6 @@
 """
     Select screen area with opencv and write output to stdout.
-    This script will be executed from `europilot.screen.stream_local_game_screen`.
+    This script will be executed from 'europilot.screen.stream_local_game_screen'.
 """
 
 import os

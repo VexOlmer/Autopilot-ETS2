@@ -4,18 +4,15 @@
 
 """
 
-# NOTE добавить включение/выключение записи данных на кнопку
-# NOTE добавить получение угла поворота по маршруту из мелкого навигатора
-# NOTE добавить при большом угле поворота зеркалние изображение, а также шумы Гаусса
-
 import os
 import re
 import time
 import hashlib
 import datetime
 import sys
-from PIL import Image
+from PIL import Image, ImageOps
 import keyboard
+import cv2 as cv
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_path, '..'))
@@ -25,6 +22,9 @@ from autopilot.screen import stream_local_game_screen
 
 from ets2_telemetry.truck_values import TruckValues
 from ets2_telemetry import TelemetryReader
+
+from scripts.angle_rotation import angle_rotation_from_map
+from scripts.to_numpy import to_numpy
 
 class _ConfigType(type):
     def __getattr__(self, attr):
@@ -64,11 +64,11 @@ def _print(text):
 _global_config = Config
 
 
-def save_image_file(file_csv_name, image_data):
+def save_image_file_RGB(file_csv_name, image, is_mirror = False):
 
     """
     
-        Image saving function.
+        Image saving function. Format RGB.
 
     """
 
@@ -76,8 +76,11 @@ def save_image_file(file_csv_name, image_data):
     filename = file_csv_name + '_' + re.sub(
         '[-:.]', '_', datetime.datetime.now().isoformat('_')[:-4]) + \
         '.' + _global_config.IMG_EXT
+    
+    if is_mirror:
+        parts = filename.split('.')
+        filename = '.'.join([parts[0], '_mirror', parts[1]])
 
-    image = Image.fromarray(image_data, 'RGB')
     image.save(os.path.join(_global_config.IMG_PATH, filename))
 
     return filename
@@ -112,18 +115,17 @@ def write_in_csv(data):
 
 def dict_from_sensor_data(sensor_data):
     return {
-        "Steer": sensor_data.steer,
-        "Throttle": sensor_data.throttle,
-        "Brake": sensor_data.brake
+        "steer": sensor_data.steer,
+        "throttle": sensor_data.throttle,
+        "brake": sensor_data.brake
     }
 
-def print_sensor_data(sensor_data):
-    print(f'Steer (поворот руля) {sensor_data.steer}')
-    print(f'Throttle (ускорение) {sensor_data.throttle}')
-    print(f'Brake (тормоз) {sensor_data.brake}')
-    # print(f'Clutch {sensor_data.clutch}')
-    # print(f'WheelPositionZ  {sensor_data.wheelPositionZ }')
-    print("------------------------------------------------\n")
+
+def print_sensor_data_dict(sensor_data_dict):
+    for key, value in sensor_data_dict.items():
+        print(key, ' --- ', value, end='     ')
+    print()
+    #print("------------------------------------------------\n")
 
 
 def generate_training_data(config=Config):
@@ -137,6 +139,8 @@ def generate_training_data(config=Config):
     global _global_config
     _global_config = config
 
+    _save_img_file = False
+
     # Check if data paths exist and are writable.
     if not os.access(config.DATA_PATH, os.W_OK):
         raise TrainException('Invalid data path: %s' % config.DATA_PATH)
@@ -145,11 +149,6 @@ def generate_training_data(config=Config):
 
     streamer = stream_local_game_screen(
         box=config.BOX, default_fps=config.DEFAULT_FPS)
-    
-    # train_uid = config.TRAIN_UID
-    # if train_uid is None:
-    #     d = str(datetime.datetime.now()).encode('utf8')
-    #     train_uid = hashlib.md5(d).hexdigest()[:8]
 
     fps_adjuster = FpsAdjuster()
     last_sensor_data = None
@@ -160,37 +159,78 @@ def generate_training_data(config=Config):
     # Checking for the existence of a data file.
     # If it is not there, fill in the names of the columns.
     path_file_csv = os.path.join(_global_config.DATA_PATH, _global_config.FILE_CSV_NAME + '.csv')
-    print(not os.path.exists(path_file_csv))
+
+    print(path_file_csv)
+    print(f'Path file csv not exists - {not os.path.exists(path_file_csv)}')
+
     if not os.path.exists(path_file_csv):
         with open(path_file_csv, "w") as file_:
             # Add headers
             telemetry_reader.update_telemetry(truck_info)
             sensor_data_dict = dict_from_sensor_data(truck_info)
+            sensor_data_dict['angle_path'] = 0
             sensor_header = ','.join(sensor_data_dict.keys())
             csv_header = 'img,' + sensor_header
             file_.write(csv_header + '\n')
 
+    front_coord = (530, 375, 1150, 750)         # Front
+    minimax_coord = (1325, 600, 1475, 750)      # Path in minimap
+
+    # Total number of recorded data and number of mirrored turns.
+    total_img = 0
+    mirror_img = 0
+    MAX_ANGLE_NOT_MIRROR = 850
+
     while True:
 
-        if last_sensor_data is None:
-            # Start generator
-            image_data = next(streamer)
-        else:
-            # image_data = streamer.send(
-            #     fps_adjuster.get_next_fps(last_sensor_data))
-            print(fps_adjuster.get_next_fps(last_sensor_data))
+        if keyboard.is_pressed('q'):
+            _save_img_file = True
+        if keyboard.is_pressed('e'):
+            _save_img_file = False
 
-        telemetry_reader.update_telemetry(truck_info)
-        sensor_data = truck_info
-        last_sensor_data = sensor_data
+        #print(f'Значение переменной - {_save_img_file}')
+
+        if(_save_img_file):
+            if last_sensor_data is None:
+                # Start generator
+                image_data = next(streamer)
+            else:
+                image_data = streamer.send(
+                    fps_adjuster.get_next_fps(last_sensor_data))
+
+            telemetry_reader.update_telemetry(truck_info)
+            sensor_data = truck_info
+            last_sensor_data = sensor_data
+
+            image = Image.fromarray(image_data, 'RGB')
+
+            image_front = image.crop(front_coord)
+            image_minimap_numpy = to_numpy(image.crop(minimax_coord))
+            angle_path = angle_rotation_from_map(image_minimap_numpy)
+
+            sensor_data_dict = dict_from_sensor_data(truck_info)
+            sensor_data_dict['angle_path'] = int(angle_path)
+            print_sensor_data_dict(sensor_data_dict)
+
+            # if (abs(sensor_data_dict['steer']) > MAX_ANGLE_NOT_MIRROR):
+            #     image_front_mirror = ImageOps.mirror(image_front)
+            #     sensor_data_dict_mirror = sensor_data_dict.copy()
+            #     sensor_data_dict_mirror['steer'] *= -1
+
+            #     mirror_img += 1
+            #     total_img += 1
+
+            #     img_filename = save_image_file_RGB(_global_config.FILE_CSV_NAME, image_front_mirror, is_mirror=True)
+            #     write_in_csv([img_filename, sensor_data_dict_mirror])
+
+            # img_filename = save_image_file_RGB(_global_config.FILE_CSV_NAME, image_front)
+            # write_in_csv([img_filename, sensor_data_dict])
+
+            # total_img += 1
+
+            # print(f'Total images - {total_img}, Mirror images - {mirror_img}')
         
-        # print_sensor_data(sensor_data)
-        # print('last_sensor_data', last_sensor_data, last_sensor_data is None, last_sensor_data.steer)
-
-        # sensor_data_dict = dict_from_sensor_data(truck_info)
-
-        # img_filename = save_image_file(_global_config.FILE_CSV_NAME, image_data)
-        # write_in_csv([img_filename, sensor_data_dict])
+        #print(f'Save image - {_save_img_file}')
 
 
 class FpsAdjuster(object):

@@ -1,5 +1,7 @@
 import os
 import sys
+import threading
+import keyboard
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_path, '..'))
@@ -9,10 +11,10 @@ from autopilot.train import generate_training_data, Config
 
 class MyConfig(Config):
     
-    BOX = Box(0, 0, 500, 500)
+    BOX = Box(0, 30, 1600, 930)
     DEFAULT_FPS = 5
     
-    DATA_PATH = os.path.join('C:\Projects\data_autopilot', 'csv')
-    IMG_PATH = os.path.join('C:\Projects\data_autopilot', 'img', 'raw')
+    # DATA_PATH = os.path.join('C:\Projects\data_autopilot', 'csv')
+    # IMG_PATH = os.path.join('C:\Projects\data_autopilot', 'img', 'raw')
 
-generate_training_data(config=MyConfig)
+generate_training_data(config = MyConfig)
