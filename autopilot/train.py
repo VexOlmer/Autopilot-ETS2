@@ -53,15 +53,6 @@ class Config(object):
     IMG_EXT = 'jpg'
     FILE_CSV_NAME = 'autopilot_data'
     DEFAULT_FPS = 5
-    KEY_OFFNO = 'q'
-    DEBUG = True
-
-
-def _print(text):
-    if _global_config.DEBUG:
-        print(text)
-
-_global_config = Config
 
 
 def save_image_file_RGB(file_csv_name, image, is_mirror = False):
@@ -266,19 +257,14 @@ class FpsAdjuster(object):
             :param sensor_data: ets2_telemetry object.
 
         """
-        
-        #print(sensor_data, sensor_data.steer)
 
         going_straight = self._going_straight(sensor_data.steer)
-        #print('going_straight ', going_straight)
         
         if self._last_straight_time is None:
             self._update_last_straight_time(going_straight)
             return self._default_fps
 
         straight_duration = time.time() - self._last_straight_time
-        
-        #print('straight_duration > self._duration_threshold:', straight_duration > self._duration_threshold)
         
         if going_straight and \
                 straight_duration > self._duration_threshold:

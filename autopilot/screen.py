@@ -161,7 +161,7 @@ class ScreenUtils(object):
 
         window_name = 'select_screen_area'
         region = cv2.selectROI(window_name, entire_screen)
-
+        
         return Box(
             region[0], region[1],
             region[0] + region[2], region[1] + region[3]

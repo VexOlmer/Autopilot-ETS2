@@ -32,8 +32,19 @@ def angle_rotation_from_map(image_numpy):
             max_line_length = w
             max_line_angle = angle
     
-    # cv2.drawContours(image, contours, -1, (0, 0, 255), 2)
-    # print("Угол красной линии: ", max_line_angle)
-    #cv2.imshow('Red Line', image)
+    cv2.drawContours(image_numpy, contours, -1, (0, 0, 255), 2)
+    print("Угол красной линии: ", max_line_angle)
+    
+    cv2.imshow('Red Line', mask)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     return max_line_angle
+
+
+image = cv2.imread('example/minimap/minimap_1.png')
+angle_rotation_from_map(image)
+
+# cv2.imshow('image', image)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
