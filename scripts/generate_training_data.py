@@ -16,11 +16,6 @@ class MyConfig(Config):
     
     # DATA_PATH = os.path.join('C:\Projects\data_autopilot', 'csv')
     # IMG_PATH = os.path.join('C:\Projects\data_autopilot', 'img', 'raw')
-
-# NOTE увеличить число машин, их слишком мало!!!
-# NOTE посмотреть бывает ли отрицательное ускорение или торможение
-# NOTE убрать возможность добавление данных с нулевым углом маршрута
-# NOTE проверить правильно ли сохраняются зеркальные изображения (на -1 умножение идет или нет)
-# NOTE проверить по примерам нахождение угла поворота маршрута, будто ошибки какие-то там
+    
 
 generate_training_data(config = MyConfig)
