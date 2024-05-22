@@ -17,5 +17,4 @@ class MyConfig(Config):
     # DATA_PATH = os.path.join('C:\Projects\data_autopilot', 'csv')
     # IMG_PATH = os.path.join('C:\Projects\data_autopilot', 'img', 'raw')
 
-
 generate_training_data(config = MyConfig)
