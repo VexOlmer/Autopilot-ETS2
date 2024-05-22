@@ -166,6 +166,7 @@ def generate_training_data(config=Config):
 
     front_coord = (530, 375, 1150, 750)         # Front
     minimax_coord = (1325, 600, 1475, 750)      # Path in minimap
+    navigator_coord = (1225, 635, 1590, 820)
 
     # Total number of recorded data and number of mirrored turns.
     total_img = 0
@@ -188,6 +189,7 @@ def generate_training_data(config=Config):
                     fps_adjuster.get_next_fps(last_sensor_data))
 
             telemetry_reader.update_telemetry(truck_info)
+
             sensor_data = truck_info
             last_sensor_data = sensor_data
 
@@ -197,27 +199,31 @@ def generate_training_data(config=Config):
             image_minimap_numpy = to_numpy(image.crop(minimax_coord))
             angle_path = angle_rotation_from_map(image_minimap_numpy)
 
-            sensor_data_dict = dict_from_sensor_data(truck_info)
-            sensor_data_dict['angle_path'] = int(angle_path)
-            #print_sensor_data_dict(sensor_data_dict)
+            print(angle_path)
 
-            if (abs(sensor_data_dict['steer']) > MAX_ANGLE_NOT_MIRROR):
-                image_front_mirror = ImageOps.mirror(image_front)
-                sensor_data_dict_mirror = sensor_data_dict.copy()
-                sensor_data_dict_mirror['steer'] *= -1
+            if (angle_path != 0):
 
-                mirror_img += 1
+                sensor_data_dict = dict_from_sensor_data(truck_info)
+                sensor_data_dict['angle_path'] = int(angle_path)
+                #print_sensor_data_dict(sensor_data_dict)
+
+                if (abs(sensor_data_dict['steer']) > MAX_ANGLE_NOT_MIRROR):
+                    image_front_mirror = ImageOps.mirror(image_front)
+                    sensor_data_dict_mirror = sensor_data_dict.copy()
+                    sensor_data_dict_mirror['steer'] *= -1
+
+                    mirror_img += 1
+                    total_img += 1
+
+                    img_filename = save_image_file_RGB(_global_config.FILE_CSV_NAME, image_front_mirror, is_mirror=True)
+                    write_in_csv([img_filename, sensor_data_dict_mirror])
+
+                img_filename = save_image_file_RGB(_global_config.FILE_CSV_NAME, image_front)
+                write_in_csv([img_filename, sensor_data_dict])
+
                 total_img += 1
 
-                img_filename = save_image_file_RGB(_global_config.FILE_CSV_NAME, image_front_mirror, is_mirror=True)
-                write_in_csv([img_filename, sensor_data_dict_mirror])
-
-            img_filename = save_image_file_RGB(_global_config.FILE_CSV_NAME, image_front)
-            write_in_csv([img_filename, sensor_data_dict])
-
-            total_img += 1
-
-            print(f'Total images - {total_img}, Mirror images - {mirror_img}, Save image - {_save_img_file}')
+                print(f'Total images - {total_img}, Mirror images - {mirror_img}, Save image - {_save_img_file}', end='\n\n')
 
 
 class FpsAdjuster(object):
